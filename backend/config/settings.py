@@ -3,6 +3,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
+from dj_database_url import UnknownSchemeError
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -85,22 +86,30 @@ WSGI_APPLICATION = 'config.wsgi.application'
 database_url = os.getenv('DATABASE_URL', '').strip()
 db_engine = os.getenv('DB_ENGINE', 'sqlite').lower()
 
+# Ignore common placeholder mistakes from hosting dashboards.
+if database_url in {'://', 'postgres://', 'postgresql://'}:
+    database_url = ''
+
 if database_url:
-    DATABASES = {
-        'default': dj_database_url.parse(
-            database_url,
-            conn_max_age=600,
-            ssl_require=not DEBUG,
-        )
-    }
-elif db_engine == 'sqlite':
+    try:
+        DATABASES = {
+            'default': dj_database_url.parse(
+                database_url,
+                conn_max_age=600,
+                ssl_require=not DEBUG,
+            )
+        }
+    except (UnknownSchemeError, ValueError):
+        database_url = ''
+
+if not database_url and db_engine == 'sqlite':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / os.getenv('SQLITE_NAME', 'db.sqlite3'),
         }
     }
-else:
+elif not database_url:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
