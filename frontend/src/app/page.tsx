@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { getCategories } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const { data: categories } = await getCategories();
 

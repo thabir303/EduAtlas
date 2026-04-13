@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { getCategory } from "@/lib/api";
 import type { Category } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 interface CategoryPageProps {
   params: Promise<{ categorySlug: string }>;
 }

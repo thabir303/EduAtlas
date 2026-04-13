@@ -6,6 +6,8 @@ import MultimediaExamplesDemo from "@/components/reader/MultimediaExamplesDemo";
 import { getSubject } from "@/lib/api";
 import type { Subject } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
