@@ -9,6 +9,11 @@ if is_truthy "${RUN_MIGRATIONS_ON_START:-False}"; then
   python manage.py migrate --noinput
 fi
 
+if is_truthy "${AUTO_CREATE_ADMIN:-False}" && ! is_truthy "${RUN_MIGRATIONS_ON_START:-False}"; then
+  echo "AUTO_CREATE_ADMIN is enabled, running migrations first to ensure auth tables exist."
+  python manage.py migrate --noinput
+fi
+
 if is_truthy "${AUTO_CREATE_ADMIN:-False}"; then
   python manage.py shell <<'PY'
 import os
