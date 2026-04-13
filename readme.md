@@ -5,7 +5,6 @@ EduAtlas is a full-stack multimedia educational content platform with:
 - Reader side: browse categories, open subjects, read article content, and interact with multimedia-linked annotations.
 - Admin side: manage categories, subcategories, subjects, content blocks, expandable sections, inline annotations, and media assets.
 
-Repository: https://github.com/thabir303/EduAtlas
 
 ## Tech Stack
 
