@@ -6,3 +6,6 @@ psycopg2-binary
 Pillow
 python-dotenv
 django-filter
+dj-database-url
+gunicorn
+whitenoise

@@ -12,7 +12,8 @@ import type {
   SubjectListItem,
 } from "./types";
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const normalizeApiUrl = (rawUrl: string) => rawUrl.replace(/\/+$/, "");
+const baseURL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api");
 
 const api: AxiosInstance = axios.create({
   baseURL,
