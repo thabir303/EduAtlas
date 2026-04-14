@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 import dj_database_url
 from dj_database_url import UnknownSchemeError
@@ -214,9 +215,19 @@ if USE_CLOUDFLARE_R2:
     AWS_S3_ENDPOINT_URL = f'https://{r2_account_id}.r2.cloudflarestorage.com'
     AWS_S3_REGION_NAME = 'auto'
     AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_S3_ADDRESSING_STYLE = 'path'
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_FILE_OVERWRITE = False
+
+    parsed_public_url = urlparse(r2_public_base_url)
+    if not parsed_public_url.scheme or not parsed_public_url.netloc:
+        raise ImproperlyConfigured(
+            'CLOUDFLARE_R2_PUBLIC_BASE_URL must be a full URL, e.g. https://pub-xxxx.r2.dev'
+        )
+
+    AWS_S3_CUSTOM_DOMAIN = parsed_public_url.netloc
+    AWS_S3_URL_PROTOCOL = f'{parsed_public_url.scheme}:'
 
     STORAGES = {
         'default': {
