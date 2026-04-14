@@ -3,6 +3,11 @@ from django.db import models
 
 
 class MediaAsset(models.Model):
+	MAX_TEXT_LENGTH = 500
+	MAX_IMAGE_SIZE_BYTES = 1 * 1024 * 1024
+	MAX_AUDIO_SIZE_BYTES = 2 * 1024 * 1024
+	MAX_VIDEO_SIZE_BYTES = 2 * 1024 * 1024
+
 	MEDIA_TYPES = [
 		("text", "Text"),
 		("image", "Image"),
@@ -32,3 +37,15 @@ class MediaAsset(models.Model):
 			raise ValidationError(f"File is required for {self.media_type} type.")
 		if self.media_type == "text" and not self.text_content:
 			raise ValidationError("Text content is required for text type.")
+
+		if self.media_type == "text" and len(self.text_content or "") > self.MAX_TEXT_LENGTH:
+			raise ValidationError(f"Text content maximum length is {self.MAX_TEXT_LENGTH} characters.")
+
+		if self.media_type == "image" and self.file and self.file.size > self.MAX_IMAGE_SIZE_BYTES:
+			raise ValidationError("Image maximum size is 1 MB.")
+
+		if self.media_type == "audio" and self.file and self.file.size > self.MAX_AUDIO_SIZE_BYTES:
+			raise ValidationError("Audio maximum size is 2 MB.")
+
+		if self.media_type == "video" and self.file and self.file.size > self.MAX_VIDEO_SIZE_BYTES:
+			raise ValidationError("Video maximum size is 2 MB.")

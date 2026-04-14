@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AxiosError } from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import Badge from "@/components/ui/Badge";
@@ -17,6 +18,62 @@ import type { MediaAsset, MediaType } from "@/lib/types";
 
 const mediaTypes: MediaType[] = ["text", "image", "audio", "video", "youtube"];
 const PAGE_SIZE = 8;
+const MAX_TEXT_LENGTH = 500;
+const MAX_IMAGE_SIZE_BYTES = 1 * 1024 * 1024;
+const MAX_AUDIO_SIZE_BYTES = 2 * 1024 * 1024;
+const MAX_VIDEO_SIZE_BYTES = 2 * 1024 * 1024;
+
+const validateMediaAssetInput = (params: {
+  mediaType: MediaType;
+  textContent: string;
+  youtubeUrl: string;
+  file: File | null;
+}) => {
+  const { mediaType, textContent, youtubeUrl, file } = params;
+
+  if (mediaType === "text" && textContent.length > MAX_TEXT_LENGTH) {
+    return `Text maximum length is ${MAX_TEXT_LENGTH} characters.`;
+  }
+
+  if (mediaType === "youtube" && !youtubeUrl.trim()) {
+    return "YouTube URL is required.";
+  }
+
+  if (mediaType === "image") {
+    if (!file) return "Image file is required.";
+    if (file.size > MAX_IMAGE_SIZE_BYTES) return "Image maximum size is 1 MB.";
+  }
+
+  if (mediaType === "audio") {
+    if (!file) return "Audio file is required.";
+    if (file.size > MAX_AUDIO_SIZE_BYTES) return "Audio maximum size is 2 MB.";
+  }
+
+  if (mediaType === "video") {
+    if (!file) return "Video file is required.";
+    if (file.size > MAX_VIDEO_SIZE_BYTES) return "Video maximum size is 2 MB.";
+  }
+
+  return null;
+};
+
+const getApiErrorMessage = (error: unknown) => {
+  const axiosError = error as AxiosError<Record<string, string | string[]>>;
+  const data = axiosError?.response?.data;
+  if (!data) {
+    return "Failed to save media asset. Please verify the input and try again.";
+  }
+
+  const firstEntry = Object.values(data)[0];
+  if (Array.isArray(firstEntry) && firstEntry.length > 0) {
+    return String(firstEntry[0]);
+  }
+  if (typeof firstEntry === "string") {
+    return firstEntry;
+  }
+
+  return "Failed to save media asset. Please verify the input and try again.";
+};
 
 export default function AdminMediaPage() {
   const queryClient = useQueryClient();
@@ -100,8 +157,8 @@ export default function AdminMediaPage() {
       setCurrentPage(1);
       await queryClient.invalidateQueries({ queryKey: queryKeys.mediaAssets });
     },
-    onError: () => {
-      showTimedError("Failed to save media asset. Please verify the input and try again.");
+    onError: (error) => {
+      showTimedError(getApiErrorMessage(error));
     },
   });
 
@@ -135,6 +192,18 @@ export default function AdminMediaPage() {
 
   const handleCreate = async () => {
     if (!canCreateAsset) {
+      return;
+    }
+
+    const validationError = validateMediaAssetInput({
+      mediaType,
+      textContent,
+      youtubeUrl,
+      file,
+    });
+
+    if (validationError) {
+      showTimedError(validationError);
       return;
     }
 
@@ -203,7 +272,8 @@ export default function AdminMediaPage() {
             <textarea
               value={textContent}
               onChange={(event) => setTextContent(event.target.value)}
-              placeholder="Text content"
+              maxLength={MAX_TEXT_LENGTH}
+              placeholder="Text content (max 500 characters)"
               className="min-h-20 rounded-md border border-slate-300 px-3 py-2 text-sm md:col-span-2"
             />
           )}
@@ -221,10 +291,39 @@ export default function AdminMediaPage() {
             <input
               type="file"
               accept={mediaType === "image" ? "image/*" : mediaType === "audio" ? "audio/*" : "video/*"}
-              onChange={(event) => setFile(event.target.files?.[0] || null)}
+              onChange={(event) => {
+                const nextFile = event.target.files?.[0] || null;
+                if (!nextFile) {
+                  setFile(null);
+                  return;
+                }
+
+                const tooLargeImage = mediaType === "image" && nextFile.size > MAX_IMAGE_SIZE_BYTES;
+                const tooLargeAudio = mediaType === "audio" && nextFile.size > MAX_AUDIO_SIZE_BYTES;
+                const tooLargeVideo = mediaType === "video" && nextFile.size > MAX_VIDEO_SIZE_BYTES;
+
+                if (tooLargeImage || tooLargeAudio || tooLargeVideo) {
+                  setFile(null);
+                  event.currentTarget.value = "";
+                  showTimedError(
+                    mediaType === "image"
+                      ? "Image maximum size is 1 MB."
+                      : mediaType === "audio"
+                        ? "Audio maximum size is 2 MB."
+                        : "Video maximum size is 2 MB.",
+                  );
+                  return;
+                }
+
+                setFile(nextFile);
+              }}
               className="rounded-md border border-slate-300 px-3 py-2 text-sm md:col-span-2"
             />
           )}
+
+          <p className="text-xs text-slate-500 md:col-span-2">
+            Limits: Text max 500 characters, image max 1 MB, audio max 2 MB, video max 2 MB.
+          </p>
         </div>
         <LoadingButton
           type="button"

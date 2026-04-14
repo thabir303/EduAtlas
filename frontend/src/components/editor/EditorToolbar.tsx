@@ -4,6 +4,7 @@ import type { Editor } from "@tiptap/react";
 import { Highlighter, Italic, Save, UnderlineIcon, Bold } from "lucide-react";
 import { useState } from "react";
 
+import LoadingButton from "@/components/ui/LoadingButton";
 import { createInlineAnnotation } from "@/lib/api";
 import type { MediaAsset } from "@/lib/types";
 
@@ -83,15 +84,16 @@ export default function EditorToolbar({ editor, contentBlockId, onLinkMedia, onS
         Link Media
       </button>
 
-      <button
+      <LoadingButton
         type="button"
-        disabled={saving}
+        loading={saving}
+        loadingText="Saving..."
         onClick={onSave}
         className="ml-auto inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
       >
         <Save size={14} />
-        {saving ? "Saving..." : "Save"}
-      </button>
+        Save
+      </LoadingButton>
 
       <MediaPicker isOpen={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={handleSelectAsset} />
     </div>

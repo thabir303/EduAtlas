@@ -26,6 +26,7 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
   const [deletingSectionId, setDeletingSectionId] = useState<number | null>(null);
   const [togglingSectionId, setTogglingSectionId] = useState<number | null>(null);
   const [movingSectionId, setMovingSectionId] = useState<number | null>(null);
+  const [movingDirection, setMovingDirection] = useState<-1 | 1 | null>(null);
   const canCreateSection = !!contentBlockId && title.trim().length > 0;
 
   const sortedSections = useMemo(() => [...sections].sort((a, b) => a.order - b.order), [sections]);
@@ -136,6 +137,7 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
 
     const target = sortedSections[swapIndex];
     setMovingSectionId(section.id);
+    setMovingDirection(direction);
 
     try {
       const first = await updateExpandableSection(section.id, { order: target.order });
@@ -153,6 +155,7 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
       setTimedError("Failed to reorder sections.");
     } finally {
       setMovingSectionId(null);
+      setMovingDirection(null);
     }
   };
 
@@ -208,22 +211,26 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
                 <p className="text-xs text-slate-500">Order: {section.order}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
+                <LoadingButton
                   type="button"
+                  loading={movingSectionId === section.id && movingDirection === -1}
+                  loadingText="Moving..."
                   onClick={() => moveSection(section, -1)}
                   disabled={index === 0 || movingSectionId === section.id}
                   className="rounded border border-slate-300 px-2 py-1 text-xs disabled:opacity-40"
                 >
                   Up
-                </button>
-                <button
+                </LoadingButton>
+                <LoadingButton
                   type="button"
+                  loading={movingSectionId === section.id && movingDirection === 1}
+                  loadingText="Moving..."
                   onClick={() => moveSection(section, 1)}
                   disabled={index === sortedSections.length - 1 || movingSectionId === section.id}
                   className="rounded border border-slate-300 px-2 py-1 text-xs disabled:opacity-40"
                 >
                   Down
-                </button>
+                </LoadingButton>
                 <LoadingButton
                   type="button"
                   onClick={() => handleToggleDefaultOpen(section)}
