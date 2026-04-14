@@ -4,6 +4,7 @@ from pathlib import Path
 
 import dj_database_url
 from dj_database_url import UnknownSchemeError
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'django_filters',
+    'storages',
     'subjects',
     'content',
     'media_assets',
@@ -183,11 +185,59 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+USE_CLOUDFLARE_R2 = env_bool('USE_CLOUDFLARE_R2', default=False)
+
+if USE_CLOUDFLARE_R2:
+    r2_account_id = os.getenv('CLOUDFLARE_R2_ACCOUNT_ID', '').strip()
+    r2_access_key_id = os.getenv('CLOUDFLARE_R2_ACCESS_KEY_ID', '').strip()
+    r2_secret_access_key = os.getenv('CLOUDFLARE_R2_SECRET_ACCESS_KEY', '').strip()
+    r2_bucket_name = os.getenv('CLOUDFLARE_R2_BUCKET_NAME', '').strip()
+    r2_public_base_url = os.getenv('CLOUDFLARE_R2_PUBLIC_BASE_URL', '').strip()
+
+    missing = [
+        key for key, value in {
+            'CLOUDFLARE_R2_ACCOUNT_ID': r2_account_id,
+            'CLOUDFLARE_R2_ACCESS_KEY_ID': r2_access_key_id,
+            'CLOUDFLARE_R2_SECRET_ACCESS_KEY': r2_secret_access_key,
+            'CLOUDFLARE_R2_BUCKET_NAME': r2_bucket_name,
+            'CLOUDFLARE_R2_PUBLIC_BASE_URL': r2_public_base_url,
+        }.items() if not value
+    ]
+    if missing:
+        raise ImproperlyConfigured(
+            'USE_CLOUDFLARE_R2 is enabled but missing env vars: ' + ', '.join(missing)
+        )
+
+    AWS_ACCESS_KEY_ID = r2_access_key_id
+    AWS_SECRET_ACCESS_KEY = r2_secret_access_key
+    AWS_STORAGE_BUCKET_NAME = r2_bucket_name
+    AWS_S3_ENDPOINT_URL = f'https://{r2_account_id}.r2.cloudflarestorage.com'
+    AWS_S3_REGION_NAME = 'auto'
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_FILE_OVERWRITE = False
+
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
+
+    MEDIA_URL = r2_public_base_url.rstrip('/') + '/'
+
 FORCE_HTTPS = env_bool('FORCE_HTTPS', default=not DEBUG)
 if FORCE_HTTPS:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+# Temporary production media serving from local disk.
+# Keep this True only when not using S3/Cloudinary.
+SERVE_MEDIA_FILES = env_bool('SERVE_MEDIA_FILES', default=not USE_CLOUDFLARE_R2)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
