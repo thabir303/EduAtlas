@@ -13,6 +13,7 @@ export default function AdminLoginPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -83,15 +84,37 @@ export default function AdminLoginPage() {
             <label htmlFor="password" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              autoComplete="current-password"
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                autoComplete="current-password"
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-12 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 cursor-pointer"
+              >
+                {showPassword ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.58 10.58a2 2 0 102.83 2.83" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.88 5.09A10.94 10.94 0 0112 4.91c5.05 0 9.27 3.12 10.67 7.5a11.8 11.8 0 01-4.12 5.74" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.61 6.61A11.8 11.8 0 001.33 12.4a11.87 11.87 0 003.79 5.2" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M1.33 12.4C2.73 8.02 6.95 4.9 12 4.9s9.27 3.12 10.67 7.5c-1.4 4.38-5.62 7.5-10.67 7.5S2.73 16.78 1.33 12.4z" />
+                    <circle cx="12" cy="12.4" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
           <LoadingButton
@@ -106,10 +129,7 @@ export default function AdminLoginPage() {
 
         <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm">
           <Link href="/" className="text-slate-600 transition hover:text-slate-900 cursor-pointer">
-            Back to reader
-          </Link>
-          <Link href="/admin" className="text-sky-700 transition hover:text-sky-900 cursor-pointer">
-            Go to dashboard
+            Back to Home Page
           </Link>
         </div>
       </div>
