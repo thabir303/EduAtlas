@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Badge from "@/components/ui/Badge";
 import LoadingButton from "@/components/ui/LoadingButton";
@@ -20,6 +20,8 @@ const PAGE_SIZE = 8;
 
 export default function AdminMediaPage() {
   const queryClient = useQueryClient();
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -31,6 +33,55 @@ export default function AdminMediaPage() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const canCreateAsset =
+    title.trim().length > 0 &&
+    ((mediaType === "text" && textContent.trim().length > 0) ||
+      (mediaType === "youtube" && youtubeUrl.trim().length > 0) ||
+      (["image", "audio", "video"].includes(mediaType) && !!file));
+
+  const clearTimedError = () => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = null;
+    }
+    setError("");
+  };
+
+  const showTimedError = (message: string) => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+
+    setError(message);
+    errorTimeoutRef.current = setTimeout(() => {
+      setError("");
+      errorTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  const showTimedSuccess = (message: string) => {
+    if (successTimeoutRef.current) {
+      clearTimeout(successTimeoutRef.current);
+    }
+
+    setSuccess(message);
+    successTimeoutRef.current = setTimeout(() => {
+      setSuccess("");
+      successTimeoutRef.current = null;
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const mediaAssetsQuery = useQuery({
     queryKey: queryKeys.mediaAssetsPage(currentPage),
@@ -44,25 +95,25 @@ export default function AdminMediaPage() {
     mutationFn: (formData: FormData) => createMediaAsset(formData),
     onSuccess: async () => {
       resetForm();
-      setError("");
-      setSuccess("Media asset saved successfully.");
+      clearTimedError();
+      showTimedSuccess("Media asset saved successfully.");
       setCurrentPage(1);
       await queryClient.invalidateQueries({ queryKey: queryKeys.mediaAssets });
     },
     onError: () => {
-      setError("Failed to save media asset. Please verify the input and try again.");
+      showTimedError("Failed to save media asset. Please verify the input and try again.");
     },
   });
 
   const deleteMediaAssetMutation = useMutation({
     mutationFn: (id: number) => deleteMediaAsset(id),
     onSuccess: async () => {
-      setError("");
-      setSuccess("Media asset deleted.");
+      clearTimedError();
+      showTimedSuccess("Media asset deleted.");
       await queryClient.invalidateQueries({ queryKey: queryKeys.mediaAssets });
     },
     onError: () => {
-      setError("Failed to delete media asset.");
+      showTimedError("Failed to delete media asset.");
     },
     onSettled: () => {
       setDeletingAssetId(null);
@@ -83,7 +134,7 @@ export default function AdminMediaPage() {
   };
 
   const handleCreate = async () => {
-    if (!title.trim()) {
+    if (!canCreateAsset) {
       return;
     }
 
@@ -178,9 +229,10 @@ export default function AdminMediaPage() {
         <LoadingButton
           type="button"
           onClick={handleCreate}
+          disabled={!canCreateAsset}
           loading={createMediaAssetMutation.isPending}
           loadingText="Saving asset..."
-          className="mt-3 rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+          className="mt-3 rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           Save Asset
         </LoadingButton>

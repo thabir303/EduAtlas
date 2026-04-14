@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import LoadingButton from "@/components/ui/LoadingButton";
 import PaginationControls from "@/components/ui/PaginationControls";
@@ -15,6 +15,8 @@ const PAGE_SIZE = 8;
 
 export default function AdminCategoriesPage() {
   const queryClient = useQueryClient();
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedCategoryId = useAdminUiStore((state) => state.selectedCategoryId);
   const setSelectedCategoryId = useAdminUiStore((state) => state.setSelectedCategoryId);
 
@@ -23,6 +25,52 @@ export default function AdminCategoriesPage() {
   const [categoryName, setCategoryName] = useState("");
   const [subcategoryName, setSubcategoryName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const canCreateCategory = categoryName.trim().length > 0;
+  const canCreateSubcategory = subcategoryName.trim().length > 0 && !!selectedCategoryId;
+
+  const clearTimedError = () => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = null;
+    }
+    setError("");
+  };
+
+  const showTimedError = (message: string) => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+
+    setError(message);
+    errorTimeoutRef.current = setTimeout(() => {
+      setError("");
+      errorTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  const showTimedSuccess = (message: string) => {
+    if (successTimeoutRef.current) {
+      clearTimeout(successTimeoutRef.current);
+    }
+
+    setSuccess(message);
+    successTimeoutRef.current = setTimeout(() => {
+      setSuccess("");
+      successTimeoutRef.current = null;
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const categoriesQuery = useQuery({
     queryKey: queryKeys.categoriesPage(currentPage),
@@ -44,13 +92,13 @@ export default function AdminCategoriesPage() {
     mutationFn: (name: string) => createCategory({ name }),
     onSuccess: async () => {
       setCategoryName("");
-      setError("");
-      setSuccess("Category created successfully.");
+      clearTimedError();
+      showTimedSuccess("Category created successfully.");
       setCurrentPage(1);
       await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
     onError: () => {
-      setError("Failed to create category. Please check admin login and try again.");
+      showTimedError("Failed to create category. Please check admin login and try again.");
     },
   });
 
@@ -58,13 +106,13 @@ export default function AdminCategoriesPage() {
     mutationFn: (payload: { name: string; category: number }) => createSubcategory(payload),
     onSuccess: async () => {
       setSubcategoryName("");
-      setError("");
-      setSuccess("Subcategory created successfully.");
+      clearTimedError();
+      showTimedSuccess("Subcategory created successfully.");
       setCurrentPage(1);
       await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
     onError: () => {
-      setError("Failed to create subcategory. Please select a valid category and try again.");
+      showTimedError("Failed to create subcategory. Please select a valid category and try again.");
     },
   });
 
@@ -76,14 +124,14 @@ export default function AdminCategoriesPage() {
   const totalPages = Math.max(1, Math.ceil((categoriesQuery.data?.count || 0) / PAGE_SIZE));
 
   const handleCreateCategory = async () => {
-    if (!categoryName.trim()) return;
+    if (!canCreateCategory) return;
 
     setSuccess("");
     createCategoryMutation.mutate(categoryName.trim());
   };
 
   const handleCreateSubcategory = async () => {
-    if (!subcategoryName.trim() || !selectedCategoryId) return;
+    if (!canCreateSubcategory) return;
 
     setSuccess("");
     createSubcategoryMutation.mutate({
@@ -118,9 +166,10 @@ export default function AdminCategoriesPage() {
             <LoadingButton
               type="button"
               onClick={handleCreateCategory}
+              disabled={!canCreateCategory}
               loading={createCategoryMutation.isPending}
               loadingText="Adding..."
-              className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+              className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               Add
             </LoadingButton>
@@ -152,9 +201,10 @@ export default function AdminCategoriesPage() {
               <LoadingButton
                 type="button"
                 onClick={handleCreateSubcategory}
+                disabled={!canCreateSubcategory}
                 loading={createSubcategoryMutation.isPending}
                 loadingText="Adding..."
-                className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+                className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Add
               </LoadingButton>

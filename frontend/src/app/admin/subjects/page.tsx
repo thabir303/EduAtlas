@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import LoadingButton from "@/components/ui/LoadingButton";
 import PaginationControls from "@/components/ui/PaginationControls";
@@ -15,6 +15,8 @@ const PAGE_SIZE = 8;
 
 export default function AdminSubjectsPage() {
   const queryClient = useQueryClient();
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedSubcategoryId = useAdminUiStore((state) => state.selectedSubcategoryId);
   const setSelectedSubcategoryId = useAdminUiStore((state) => state.setSelectedSubcategoryId);
 
@@ -23,6 +25,51 @@ export default function AdminSubjectsPage() {
 
   const [title, setTitle] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const canCreateSubject = title.trim().length > 0 && !!selectedSubcategoryId;
+
+  const clearTimedError = () => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = null;
+    }
+    setError("");
+  };
+
+  const showTimedError = (message: string) => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+
+    setError(message);
+    errorTimeoutRef.current = setTimeout(() => {
+      setError("");
+      errorTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  const showTimedSuccess = (message: string) => {
+    if (successTimeoutRef.current) {
+      clearTimeout(successTimeoutRef.current);
+    }
+
+    setSuccess(message);
+    successTimeoutRef.current = setTimeout(() => {
+      setSuccess("");
+      successTimeoutRef.current = null;
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const subjectsQuery = useQuery({
     queryKey: queryKeys.subjectsPage(currentPage),
@@ -45,14 +92,14 @@ export default function AdminSubjectsPage() {
     onSuccess: async () => {
       setTitle("");
       setSelectedSubcategoryId(null);
-      setError("");
-      setSuccess("Subject created successfully.");
+      clearTimedError();
+      showTimedSuccess("Subject created successfully.");
       setCurrentPage(1);
       await queryClient.invalidateQueries({ queryKey: queryKeys.subjects });
       await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
     onError: () => {
-      setError("Failed to create subject. Ensure valid subcategory and admin auth.");
+      showTimedError("Failed to create subject. Ensure valid subcategory and admin auth.");
     },
   });
 
@@ -69,7 +116,7 @@ export default function AdminSubjectsPage() {
   );
 
   const handleCreateSubject = async () => {
-    if (!title.trim() || !selectedSubcategoryId) {
+    if (!canCreateSubject) {
       return;
     }
 
@@ -114,9 +161,10 @@ export default function AdminSubjectsPage() {
           <LoadingButton
             type="button"
             onClick={handleCreateSubject}
+            disabled={!canCreateSubject}
             loading={createSubjectMutation.isPending}
             loadingText="Adding subject..."
-            className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+            className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             Add Subject
           </LoadingButton>

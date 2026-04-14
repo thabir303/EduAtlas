@@ -28,6 +28,12 @@ export default function MediaPicker({ isOpen, onClose, onSelect }: Props) {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
+  const canCreateAsset =
+    title.trim().length > 0 &&
+    ((mediaType === "text" && textContent.trim().length > 0) ||
+      (mediaType === "youtube" && youtubeUrl.trim().length > 0) ||
+      (["image", "audio", "video"].includes(mediaType) && !!file));
+
   const groupedAssets = useMemo(() => assets, [assets]);
 
   useEffect(() => {
@@ -48,7 +54,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect }: Props) {
   };
 
   const handleCreate = async () => {
-    if (!title.trim()) return;
+    if (!canCreateAsset) return;
 
     const formData = new FormData();
     formData.append("title", title.trim());
@@ -152,9 +158,9 @@ export default function MediaPicker({ isOpen, onClose, onSelect }: Props) {
 
             <button
               type="button"
-              disabled={uploading}
+              disabled={uploading || !canCreateAsset}
               onClick={handleCreate}
-              className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
+              className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {uploading ? "Creating..." : "Create Asset"}
             </button>

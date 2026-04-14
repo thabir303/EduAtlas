@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import LoadingButton from "@/components/ui/LoadingButton";
 import {
@@ -16,6 +16,7 @@ interface Props {
 }
 
 export default function ExpandableSectionManager({ contentBlockId, initialSections = [] }: Props) {
+  const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [sections, setSections] = useState<ExpandableSection[]>(initialSections);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -25,13 +26,51 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
   const [deletingSectionId, setDeletingSectionId] = useState<number | null>(null);
   const [togglingSectionId, setTogglingSectionId] = useState<number | null>(null);
   const [movingSectionId, setMovingSectionId] = useState<number | null>(null);
+  const canCreateSection = !!contentBlockId && title.trim().length > 0;
 
   const sortedSections = useMemo(() => [...sections].sort((a, b) => a.order - b.order), [sections]);
 
+  const setTimedError = (text: string) => {
+    if (messageTimeoutRef.current) {
+      clearTimeout(messageTimeoutRef.current);
+    }
+
+    setMessageTone("error");
+    setMessage(text);
+    messageTimeoutRef.current = setTimeout(() => {
+      setMessage("");
+      messageTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  const clearTimedMessage = () => {
+    if (messageTimeoutRef.current) {
+      clearTimeout(messageTimeoutRef.current);
+      messageTimeoutRef.current = null;
+    }
+  };
+
+  const setTimedSuccess = (text: string) => {
+    clearTimedMessage();
+    setMessageTone("success");
+    setMessage(text);
+    messageTimeoutRef.current = setTimeout(() => {
+      setMessage("");
+      messageTimeoutRef.current = null;
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleCreate = async () => {
-    if (!contentBlockId || !title.trim()) {
-      setMessageTone("error");
-      setMessage("Content block or section title is missing.");
+    if (!canCreateSection) {
+      setTimedError("Content block or section title is missing.");
       return;
     }
 
@@ -50,11 +89,9 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
       setSections((prev) => [...prev, data]);
       setTitle("");
       setBody("");
-      setMessageTone("success");
-      setMessage("Section added successfully.");
+      setTimedSuccess("Section added successfully.");
     } catch {
-      setMessageTone("error");
-      setMessage("Failed to add section. Please check admin login and try again.");
+      setTimedError("Failed to add section. Please check admin login and try again.");
     } finally {
       setCreating(false);
     }
@@ -65,11 +102,9 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
     try {
       await deleteExpandableSection(id);
       setSections((prev) => prev.filter((section) => section.id !== id));
-      setMessageTone("success");
-      setMessage("Section deleted.");
+      setTimedSuccess("Section deleted.");
     } catch {
-      setMessageTone("error");
-      setMessage("Failed to delete section.");
+      setTimedError("Failed to delete section.");
     } finally {
       setDeletingSectionId(null);
     }
@@ -83,11 +118,9 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
       });
 
       setSections((prev) => prev.map((item) => (item.id === section.id ? data : item)));
-      setMessageTone("success");
-      setMessage("Section updated.");
+      setTimedSuccess("Section updated.");
     } catch {
-      setMessageTone("error");
-      setMessage("Failed to update section.");
+      setTimedError("Failed to update section.");
     } finally {
       setTogglingSectionId(null);
     }
@@ -115,11 +148,9 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
           return item;
         }),
       );
-      setMessageTone("success");
-      setMessage("Section order updated.");
+      setTimedSuccess("Section order updated.");
     } catch {
-      setMessageTone("error");
-      setMessage("Failed to reorder sections.");
+      setTimedError("Failed to reorder sections.");
     } finally {
       setMovingSectionId(null);
     }
@@ -158,9 +189,10 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
           <LoadingButton
             type="button"
             onClick={handleCreate}
+            disabled={!canCreateSection}
             loading={creating}
             loadingText="Adding section..."
-            className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+            className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             Add Section
           </LoadingButton>

@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -10,6 +10,8 @@ import { setTokens } from "@/lib/auth";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -18,23 +20,60 @@ export default function AdminLoginPage() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const isFormValid = username.trim().length > 0 && password.trim().length > 0;
+
+  const showTimedError = (message: string) => {
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+
+    setError(message);
+    errorTimeoutRef.current = setTimeout(() => {
+      setError("");
+      errorTimeoutRef.current = null;
+    }, 3000);
+  };
+
+  const showTimedSuccess = (message: string) => {
+    if (successTimeoutRef.current) {
+      clearTimeout(successTimeoutRef.current);
+    }
+
+    setSuccess(message);
+    successTimeoutRef.current = setTimeout(() => {
+      setSuccess("");
+      successTimeoutRef.current = null;
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleSubmit = async () => {
-    if (!username.trim() || !password.trim()) {
-      setError("Please enter both username and password.");
+    if (!isFormValid) {
+      showTimedError("Please enter both username and password.");
       return;
     }
 
-    setError("");
     setSuccess("");
     setLoading(true);
 
     try {
       const { data } = await login(username, password);
+      setError("");
       setTokens(data);
-      setSuccess("Login successful. Redirecting...");
+      showTimedSuccess("Login successful. Redirecting...");
       router.replace("/admin");
     } catch {
-      setError("Invalid credentials. Please try again.");
+      showTimedError("Invalid credentials. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -120,8 +159,9 @@ export default function AdminLoginPage() {
           <LoadingButton
             type="submit"
             loading={loading}
+            disabled={!isFormValid}
             loadingText="Logging in..."
-            className="w-full rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className="w-full rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Sign In
           </LoadingButton>
