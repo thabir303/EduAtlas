@@ -1,31 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
+import SkeletonBlock from "@/components/ui/SkeletonBlock";
 import { getCategories, getMediaAssets, getSubjects } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState({
-    categories: 0,
-    subjects: 0,
-    mediaAssets: 0,
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: async () => {
+      const response = await getCategories();
+      return response.data;
+    },
   });
-  const [error, setError] = useState("");
 
-  useEffect(() => {
-    Promise.all([getCategories(), getSubjects(), getMediaAssets()])
-      .then(([categories, subjects, media]) => {
-        setStats({
-          categories: categories.data.length,
-          subjects: subjects.data.length,
-          mediaAssets: media.data.length,
-        });
-        setError("");
-      })
-      .catch(() => {
-        setError("Could not load dashboard stats.");
-      });
-  }, []);
+  const subjectsQuery = useQuery({
+    queryKey: queryKeys.subjects,
+    queryFn: async () => {
+      const response = await getSubjects();
+      return response.data;
+    },
+  });
+
+  const mediaAssetsQuery = useQuery({
+    queryKey: queryKeys.mediaAssets,
+    queryFn: async () => {
+      const response = await getMediaAssets();
+      return response.data;
+    },
+  });
+
+  const loadingStats = categoriesQuery.isPending || subjectsQuery.isPending || mediaAssetsQuery.isPending;
+  const error =
+    categoriesQuery.isError || subjectsQuery.isError || mediaAssetsQuery.isError
+      ? "Could not load dashboard stats."
+      : "";
+
+  const stats = {
+    categories: categoriesQuery.data?.length || 0,
+    subjects: subjectsQuery.data?.length || 0,
+    mediaAssets: mediaAssetsQuery.data?.length || 0,
+  };
 
   return (
     <div>
@@ -34,15 +50,27 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-5">
           <p className="text-sm text-slate-500">Categories</p>
-          <p className="mt-1 text-2xl font-bold text-slate-800">{stats.categories}</p>
+          {loadingStats ? (
+            <SkeletonBlock className="mt-2 h-8 w-14" />
+          ) : (
+            <p className="mt-1 text-2xl font-bold text-slate-800">{stats.categories}</p>
+          )}
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-5">
           <p className="text-sm text-slate-500">Subjects</p>
-          <p className="mt-1 text-2xl font-bold text-slate-800">{stats.subjects}</p>
+          {loadingStats ? (
+            <SkeletonBlock className="mt-2 h-8 w-14" />
+          ) : (
+            <p className="mt-1 text-2xl font-bold text-slate-800">{stats.subjects}</p>
+          )}
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-5">
           <p className="text-sm text-slate-500">Media Assets</p>
-          <p className="mt-1 text-2xl font-bold text-slate-800">{stats.mediaAssets}</p>
+          {loadingStats ? (
+            <SkeletonBlock className="mt-2 h-8 w-14" />
+          ) : (
+            <p className="mt-1 text-2xl font-bold text-slate-800">{stats.mediaAssets}</p>
+          )}
         </div>
       </div>
     </div>

@@ -1,58 +1,87 @@
 "use client";
-/* eslint-disable react-hooks/set-state-in-effect */
 
-import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
+import LoadingButton from "@/components/ui/LoadingButton";
+import SkeletonBlock from "@/components/ui/SkeletonBlock";
 import { createCategory, createSubcategory, getCategories } from "@/lib/api";
-import type { Category } from "@/lib/types";
+import { queryKeys } from "@/lib/query-keys";
+import { useAdminUiStore } from "@/store/admin-ui-store";
 
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const queryClient = useQueryClient();
+  const selectedCategoryId = useAdminUiStore((state) => state.selectedCategoryId);
+  const setSelectedCategoryId = useAdminUiStore((state) => state.setSelectedCategoryId);
+
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [categoryName, setCategoryName] = useState("");
   const [subcategoryName, setSubcategoryName] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<number | "">("");
-  const [error, setError] = useState("");
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: async () => {
+      const response = await getCategories();
+      return response.data;
+    },
+  });
 
-  const loadCategories = async () => {
-    try {
-      const { data } = await getCategories();
-      setCategories(data);
+  const createCategoryMutation = useMutation({
+    mutationFn: (name: string) => createCategory({ name }),
+    onSuccess: async () => {
+      setCategoryName("");
       setError("");
-    } catch {
-      setError("Could not load categories. Please try again.");
-    }
-  };
+      setSuccess("Category created successfully.");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+    },
+    onError: () => {
+      setError("Failed to create category. Please check admin login and try again.");
+    },
+  });
 
-  useEffect(() => {
-    void loadCategories();
-  }, []);
+  const createSubcategoryMutation = useMutation({
+    mutationFn: (payload: { name: string; category: number }) => createSubcategory(payload),
+    onSuccess: async () => {
+      setSubcategoryName("");
+      setError("");
+      setSuccess("Subcategory created successfully.");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
+    },
+    onError: () => {
+      setError("Failed to create subcategory. Please select a valid category and try again.");
+    },
+  });
+
+  const categories = categoriesQuery.data || [];
+  const loadingCategories = categoriesQuery.isPending;
+  const categoriesLoadError = categoriesQuery.isError ? "Could not load categories. Please try again." : "";
 
   const handleCreateCategory = async () => {
     if (!categoryName.trim()) return;
-    try {
-      await createCategory({ name: categoryName.trim() });
-      setCategoryName("");
-      await loadCategories();
-    } catch {
-      setError("Failed to create category. Please check admin login and try again.");
-    }
+
+    setSuccess("");
+    createCategoryMutation.mutate(categoryName.trim());
   };
 
   const handleCreateSubcategory = async () => {
-    if (!subcategoryName.trim() || !selectedCategory) return;
-    try {
-      await createSubcategory({ name: subcategoryName.trim(), category: Number(selectedCategory) });
-      setSubcategoryName("");
-      await loadCategories();
-    } catch {
-      setError("Failed to create subcategory. Please select a valid category and try again.");
-    }
+    if (!subcategoryName.trim() || !selectedCategoryId) return;
+
+    setSuccess("");
+    createSubcategoryMutation.mutate({
+      name: subcategoryName.trim(),
+      category: selectedCategoryId,
+    });
   };
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-slate-900">Manage Categories</h1>
-      {error && <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
+      {(error || categoriesLoadError) && (
+        <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {error || categoriesLoadError}
+        </p>
+      )}
+      {success && <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</p>}
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -64,13 +93,15 @@ export default function AdminCategoriesPage() {
               placeholder="Category name"
               className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm"
             />
-            <button
+            <LoadingButton
               type="button"
               onClick={handleCreateCategory}
+              loading={createCategoryMutation.isPending}
+              loadingText="Adding..."
               className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
             >
               Add
-            </button>
+            </LoadingButton>
           </div>
         </div>
 
@@ -78,8 +109,8 @@ export default function AdminCategoriesPage() {
           <h2 className="mb-3 text-sm font-semibold uppercase text-slate-500">Create Subcategory</h2>
           <div className="space-y-2">
             <select
-              value={selectedCategory}
-              onChange={(event) => setSelectedCategory(event.target.value ? Number(event.target.value) : "")}
+              value={selectedCategoryId ?? ""}
+              onChange={(event) => setSelectedCategoryId(event.target.value ? Number(event.target.value) : null)}
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             >
               <option value="">Select category</option>
@@ -96,13 +127,15 @@ export default function AdminCategoriesPage() {
                 placeholder="Subcategory name"
                 className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm"
               />
-              <button
+              <LoadingButton
                 type="button"
                 onClick={handleCreateSubcategory}
+                loading={createSubcategoryMutation.isPending}
+                loadingText="Adding..."
                 className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
               >
                 Add
-              </button>
+              </LoadingButton>
             </div>
           </div>
         </div>
@@ -110,20 +143,28 @@ export default function AdminCategoriesPage() {
 
       <div className="rounded-xl border border-slate-200 bg-white p-5">
         <h2 className="mb-4 text-lg font-semibold text-slate-900">Current Structure</h2>
-        <div className="space-y-4">
-          {categories.map((category) => (
-            <div key={category.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <h3 className="font-semibold text-slate-800">{category.name}</h3>
-              <ul className="mt-2 space-y-1">
-                {category.subcategories.map((subcategory) => (
-                  <li key={subcategory.id} className="text-sm text-slate-600">
-                    {subcategory.name} ({subcategory.subjects.length} subjects)
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        {loadingCategories ? (
+          <div className="space-y-3">
+            <SkeletonBlock className="h-20 w-full" />
+            <SkeletonBlock className="h-20 w-full" />
+            <SkeletonBlock className="h-20 w-full" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {categories.map((category) => (
+              <div key={category.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                <h3 className="font-semibold text-slate-800">{category.name}</h3>
+                <ul className="mt-2 space-y-1">
+                  {category.subcategories.map((subcategory) => (
+                    <li key={subcategory.id} className="text-sm text-slate-600">
+                      {subcategory.name} ({subcategory.subjects.length} subjects)
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

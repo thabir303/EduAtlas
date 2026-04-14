@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import ExpandableSectionManager from "@/components/editor/ExpandableSectionManager";
+import SkeletonBlock from "@/components/ui/SkeletonBlock";
 import { createContentBlock, getSubject, updateContentBlock } from "@/lib/api";
 import { bodyNodesToTiptap, tiptapToBodyNodes } from "@/lib/tiptap-utils";
 import type { Subject } from "@/lib/types";
@@ -84,11 +85,21 @@ export default function SubjectEditPage() {
   }
 
   if (!subject) {
-    return <div className="p-6">Loading...</div>;
+    return (
+      <div className="space-y-4 p-6">
+        <SkeletonBlock className="h-8 w-64" />
+        <SkeletonBlock className="h-80 w-full" />
+      </div>
+    );
   }
 
   if (initializingBlock) {
-    return <div className="p-6">Preparing editor...</div>;
+    return (
+      <div className="space-y-4 p-6">
+        <SkeletonBlock className="h-8 w-72" />
+        <SkeletonBlock className="h-80 w-full" />
+      </div>
+    );
   }
 
   if (!subject.content_block) {

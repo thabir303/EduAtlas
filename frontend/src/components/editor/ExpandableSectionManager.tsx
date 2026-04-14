@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import LoadingButton from "@/components/ui/LoadingButton";
 import {
   createExpandableSection,
   deleteExpandableSection,
@@ -20,6 +21,10 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
   const [body, setBody] = useState("");
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"success" | "error">("success");
+  const [creating, setCreating] = useState(false);
+  const [deletingSectionId, setDeletingSectionId] = useState<number | null>(null);
+  const [togglingSectionId, setTogglingSectionId] = useState<number | null>(null);
+  const [movingSectionId, setMovingSectionId] = useState<number | null>(null);
 
   const sortedSections = useMemo(() => [...sections].sort((a, b) => a.order - b.order), [sections]);
 
@@ -29,6 +34,8 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
       setMessage("Content block or section title is missing.");
       return;
     }
+
+    setCreating(true);
 
     try {
       const nextOrder = sortedSections.length;
@@ -48,10 +55,13 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
     } catch {
       setMessageTone("error");
       setMessage("Failed to add section. Please check admin login and try again.");
+    } finally {
+      setCreating(false);
     }
   };
 
   const handleDelete = async (id: number) => {
+    setDeletingSectionId(id);
     try {
       await deleteExpandableSection(id);
       setSections((prev) => prev.filter((section) => section.id !== id));
@@ -60,10 +70,13 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
     } catch {
       setMessageTone("error");
       setMessage("Failed to delete section.");
+    } finally {
+      setDeletingSectionId(null);
     }
   };
 
   const handleToggleDefaultOpen = async (section: ExpandableSection) => {
+    setTogglingSectionId(section.id);
     try {
       const { data } = await updateExpandableSection(section.id, {
         is_default_open: !section.is_default_open,
@@ -75,6 +88,8 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
     } catch {
       setMessageTone("error");
       setMessage("Failed to update section.");
+    } finally {
+      setTogglingSectionId(null);
     }
   };
 
@@ -87,6 +102,7 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
     }
 
     const target = sortedSections[swapIndex];
+    setMovingSectionId(section.id);
 
     try {
       const first = await updateExpandableSection(section.id, { order: target.order });
@@ -104,6 +120,8 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
     } catch {
       setMessageTone("error");
       setMessage("Failed to reorder sections.");
+    } finally {
+      setMovingSectionId(null);
     }
   };
 
@@ -137,13 +155,15 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
             placeholder="Section body"
             className="min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
           />
-          <button
+          <LoadingButton
             type="button"
             onClick={handleCreate}
+            loading={creating}
+            loadingText="Adding section..."
             className="rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
           >
             Add Section
-          </button>
+          </LoadingButton>
         </div>
       </div>
 
@@ -159,7 +179,7 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
                 <button
                   type="button"
                   onClick={() => moveSection(section, -1)}
-                  disabled={index === 0}
+                  disabled={index === 0 || movingSectionId === section.id}
                   className="rounded border border-slate-300 px-2 py-1 text-xs disabled:opacity-40"
                 >
                   Up
@@ -167,25 +187,29 @@ export default function ExpandableSectionManager({ contentBlockId, initialSectio
                 <button
                   type="button"
                   onClick={() => moveSection(section, 1)}
-                  disabled={index === sortedSections.length - 1}
+                  disabled={index === sortedSections.length - 1 || movingSectionId === section.id}
                   className="rounded border border-slate-300 px-2 py-1 text-xs disabled:opacity-40"
                 >
                   Down
                 </button>
-                <button
+                <LoadingButton
                   type="button"
                   onClick={() => handleToggleDefaultOpen(section)}
+                  loading={togglingSectionId === section.id}
+                  loadingText="Saving..."
                   className="rounded border border-blue-300 px-2 py-1 text-xs text-blue-700"
                 >
                   {section.is_default_open ? "Default Open" : "Set Default"}
-                </button>
-                <button
+                </LoadingButton>
+                <LoadingButton
                   type="button"
                   onClick={() => handleDelete(section.id)}
+                  loading={deletingSectionId === section.id}
+                  loadingText="Deleting..."
                   className="rounded border border-rose-300 px-2 py-1 text-xs text-rose-700"
                 >
                   Delete
-                </button>
+                </LoadingButton>
               </div>
             </div>
             <p className="mt-2 text-sm text-slate-600">{section.body}</p>
