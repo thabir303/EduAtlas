@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import LoadingButton from "@/components/ui/LoadingButton";
@@ -17,6 +18,11 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
+    if (!username.trim() || !password.trim()) {
+      setError("Please enter both username and password.");
+      return;
+    }
+
     setError("");
     setSuccess("");
     setLoading(true);
@@ -33,41 +39,78 @@ export default function AdminLoginPage() {
     }
   };
 
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    handleSubmit();
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-6 text-2xl font-bold text-slate-900">Login</h1>
-        {error && <p className="mb-4 text-sm text-rose-600">{error}</p>}
-        {success && <p className="mb-4 text-sm text-emerald-600">{success}</p>}
-        <div className="space-y-3">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-4 py-2"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                handleSubmit();
-              }
-            }}
-            className="w-full rounded-lg border border-slate-300 px-4 py-2"
-          />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-slate-100 via-white to-sky-100 p-6">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 top-16 h-64 w-64 rounded-full bg-sky-200/40 blur-3xl" />
+        <div className="absolute -right-20 bottom-10 h-72 w-72 rounded-full bg-cyan-200/30 blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white/90 p-8 shadow-xl backdrop-blur-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">EduAtlas Admin</p>
+        <h1 className="mt-2 text-2xl font-bold text-slate-900">Welcome back</h1>
+        <p className="mt-1 text-sm text-slate-600">Sign in to manage categories, subjects, and media assets.</p>
+
+        {error && <p className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
+        {success && (
+          <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            {success}
+          </p>
+        )}
+
+        <form className="mt-5 space-y-4" onSubmit={handleFormSubmit}>
+          <div className="space-y-1.5">
+            <label htmlFor="username" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+              Username
+            </label>
+            <input
+              id="username"
+              type="text"
+              placeholder="Enter your username"
+              value={username}
+              autoComplete="username"
+              onChange={(event) => setUsername(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              autoComplete="current-password"
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+            />
+          </div>
+
           <LoadingButton
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
             loading={loading}
             loadingText="Logging in..."
-            className="w-full rounded-lg bg-slate-900 py-2 font-semibold text-white"
+            className="w-full rounded-lg bg-slate-900 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
-            Login
+            Sign In
           </LoadingButton>
+        </form>
+
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm">
+          <Link href="/" className="text-slate-600 transition hover:text-slate-900 cursor-pointer">
+            Back to reader
+          </Link>
+          <Link href="/admin" className="text-sky-700 transition hover:text-sky-900 cursor-pointer">
+            Go to dashboard
+          </Link>
         </div>
       </div>
     </div>

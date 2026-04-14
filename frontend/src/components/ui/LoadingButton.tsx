@@ -14,11 +14,13 @@ export default function LoadingButton({
   className = "",
   ...props
 }: LoadingButtonProps) {
+  const pointerStateClass = disabled || loading ? "cursor-not-allowed" : "cursor-pointer";
+
   return (
     <button
       {...props}
       disabled={disabled || loading}
-      className={`${className} ${loading ? "cursor-not-allowed opacity-70" : ""}`.trim()}
+      className={`${className} ${pointerStateClass} ${loading ? "opacity-70" : ""}`.trim()}
     >
       <span className="inline-flex items-center gap-2">
         {loading && (
