@@ -17,9 +17,10 @@ class MediaAsset(models.Model):
 	file = models.FileField(upload_to="media_assets/%Y/%m/", blank=True, null=True)
 	youtube_url = models.URLField(blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
 
 	class Meta:
-		ordering = ["-created_at"]
+		ordering = ["-updated_at", "-created_at"]
 
 	def __str__(self):
 		return f"[{self.media_type.upper()}] {self.title}"

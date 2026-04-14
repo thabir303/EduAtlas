@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import Badge from "@/components/ui/Badge";
 import LoadingButton from "@/components/ui/LoadingButton";
+import PaginationControls from "@/components/ui/PaginationControls";
 import SkeletonBlock from "@/components/ui/SkeletonBlock";
 import {
   createMediaAsset,
@@ -15,6 +16,7 @@ import { queryKeys } from "@/lib/query-keys";
 import type { MediaAsset, MediaType } from "@/lib/types";
 
 const mediaTypes: MediaType[] = ["text", "image", "audio", "video", "youtube"];
+const PAGE_SIZE = 8;
 
 export default function AdminMediaPage() {
   const queryClient = useQueryClient();
@@ -28,11 +30,12 @@ export default function AdminMediaPage() {
   const [textContent, setTextContent] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const mediaAssetsQuery = useQuery({
-    queryKey: queryKeys.mediaAssets,
+    queryKey: queryKeys.mediaAssetsPage(currentPage),
     queryFn: async () => {
-      const response = await getMediaAssets();
+      const response = await getMediaAssets({ page: currentPage });
       return response.data;
     },
   });
@@ -43,6 +46,7 @@ export default function AdminMediaPage() {
       resetForm();
       setError("");
       setSuccess("Media asset saved successfully.");
+      setCurrentPage(1);
       await queryClient.invalidateQueries({ queryKey: queryKeys.mediaAssets });
     },
     onError: () => {
@@ -65,14 +69,10 @@ export default function AdminMediaPage() {
     },
   });
 
-  const assets = useMemo<MediaAsset[]>(() => mediaAssetsQuery.data || [], [mediaAssetsQuery.data]);
+  const assets = useMemo<MediaAsset[]>(() => mediaAssetsQuery.data?.results || [], [mediaAssetsQuery.data]);
   const loadingAssets = mediaAssetsQuery.isPending;
   const mediaLoadError = mediaAssetsQuery.isError ? "Could not load media assets." : "";
-
-  const sortedAssets = useMemo(
-    () => [...assets].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
-    [assets],
-  );
+  const totalPages = Math.max(1, Math.ceil((mediaAssetsQuery.data?.count || 0) / PAGE_SIZE));
 
   const resetForm = () => {
     setTitle("");
@@ -193,7 +193,7 @@ export default function AdminMediaPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {sortedAssets.map((asset) => (
+            {assets.map((asset) => (
               <div
                 key={asset.id}
                 className="flex flex-col gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between"
@@ -219,6 +219,13 @@ export default function AdminMediaPage() {
                 </LoadingButton>
               </div>
             ))}
+
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              loading={loadingAssets}
+            />
           </div>
         )}
       </div>

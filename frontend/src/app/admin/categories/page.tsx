@@ -1,13 +1,17 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
 import LoadingButton from "@/components/ui/LoadingButton";
+import PaginationControls from "@/components/ui/PaginationControls";
 import SkeletonBlock from "@/components/ui/SkeletonBlock";
-import { createCategory, createSubcategory, getCategories } from "@/lib/api";
+import { createCategory, createSubcategory, getAllCategories, getCategories } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { useAdminUiStore } from "@/store/admin-ui-store";
+
+const PAGE_SIZE = 8;
 
 export default function AdminCategoriesPage() {
   const queryClient = useQueryClient();
@@ -18,10 +22,20 @@ export default function AdminCategoriesPage() {
   const [success, setSuccess] = useState("");
   const [categoryName, setCategoryName] = useState("");
   const [subcategoryName, setSubcategoryName] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
   const categoriesQuery = useQuery({
-    queryKey: queryKeys.categories,
+    queryKey: queryKeys.categoriesPage(currentPage),
     queryFn: async () => {
-      const response = await getCategories();
+      const response = await getCategories({ page: currentPage });
+      return response.data;
+    },
+  });
+
+  const allCategoriesQuery = useQuery({
+    queryKey: [...queryKeys.categories, "all"],
+    queryFn: async () => {
+      const response = await getAllCategories();
       return response.data;
     },
   });
@@ -32,6 +46,7 @@ export default function AdminCategoriesPage() {
       setCategoryName("");
       setError("");
       setSuccess("Category created successfully.");
+      setCurrentPage(1);
       await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
     onError: () => {
@@ -45,6 +60,7 @@ export default function AdminCategoriesPage() {
       setSubcategoryName("");
       setError("");
       setSuccess("Subcategory created successfully.");
+      setCurrentPage(1);
       await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
     onError: () => {
@@ -52,9 +68,12 @@ export default function AdminCategoriesPage() {
     },
   });
 
-  const categories = categoriesQuery.data || [];
+  const categories = useMemo(() => categoriesQuery.data?.results || [], [categoriesQuery.data]);
+  const allCategories = useMemo(() => allCategoriesQuery.data || [], [allCategoriesQuery.data]);
   const loadingCategories = categoriesQuery.isPending;
-  const categoriesLoadError = categoriesQuery.isError ? "Could not load categories. Please try again." : "";
+  const categoriesLoadError =
+    categoriesQuery.isError || allCategoriesQuery.isError ? "Could not load categories. Please try again." : "";
+  const totalPages = Math.max(1, Math.ceil((categoriesQuery.data?.count || 0) / PAGE_SIZE));
 
   const handleCreateCategory = async () => {
     if (!categoryName.trim()) return;
@@ -114,7 +133,7 @@ export default function AdminCategoriesPage() {
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             >
               <option value="">Select category</option>
-              {categories.map((category) => (
+              {allCategories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
@@ -151,18 +170,71 @@ export default function AdminCategoriesPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {categories.map((category) => (
-              <div key={category.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <h3 className="font-semibold text-slate-800">{category.name}</h3>
-                <ul className="mt-2 space-y-1">
-                  {category.subcategories.map((subcategory) => (
-                    <li key={subcategory.id} className="text-sm text-slate-600">
-                      {subcategory.name} ({subcategory.subjects.length} subjects)
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {categories.map((category) => {
+              const firstCategorySubject = category.subcategories.flatMap((subcategory) => subcategory.subjects)[0];
+
+              return (
+                <div key={category.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                      href={firstCategorySubject ? `/subjects/${firstCategorySubject.slug}` : `/categories/${category.slug}`}
+                      className="text-base font-semibold text-sky-700 underline-offset-2 hover:underline"
+                    >
+                      {category.name}
+                    </Link>
+                    {firstCategorySubject && (
+                      <Link
+                        href={`/subjects/${firstCategorySubject.slug}`}
+                        className="text-xs font-semibold text-blue-700 underline-offset-2 hover:underline"
+                      >
+                        Open latest subject
+                      </Link>
+                    )}
+                  </div>
+                  <ul className="mt-2 space-y-1">
+                    {category.subcategories.map((subcategory) => {
+                      const firstSubject = subcategory.subjects[0];
+
+                      return (
+                        <li key={subcategory.id} className="text-sm text-slate-600">
+                          {firstSubject ? (
+                            <Link
+                              href={`/subjects/${firstSubject.slug}`}
+                              className="font-medium text-slate-800 underline-offset-2 hover:underline"
+                            >
+                              {subcategory.name}
+                            </Link>
+                          ) : (
+                            <span className="font-medium text-slate-800">{subcategory.name}</span>
+                          )}{" "}
+                          ({subcategory.subjects.length} subjects)
+                          {subcategory.subjects.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                              {subcategory.subjects.map((subject) => (
+                                <Link
+                                  key={subject.id}
+                                  href={`/subjects/${subject.slug}`}
+                                  className="text-xs font-semibold text-blue-700 underline-offset-2 hover:underline"
+                                >
+                                  {subject.title}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              loading={loadingCategories}
+            />
           </div>
         )}
       </div>

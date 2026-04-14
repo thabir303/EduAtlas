@@ -5,10 +5,13 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import LoadingButton from "@/components/ui/LoadingButton";
+import PaginationControls from "@/components/ui/PaginationControls";
 import SkeletonBlock from "@/components/ui/SkeletonBlock";
-import { createSubject, getCategories, getSubjects } from "@/lib/api";
+import { createSubject, getAllCategories, getSubjects } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 import { useAdminUiStore } from "@/store/admin-ui-store";
+
+const PAGE_SIZE = 8;
 
 export default function AdminSubjectsPage() {
   const queryClient = useQueryClient();
@@ -19,19 +22,20 @@ export default function AdminSubjectsPage() {
   const [success, setSuccess] = useState("");
 
   const [title, setTitle] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const subjectsQuery = useQuery({
-    queryKey: queryKeys.subjects,
+    queryKey: queryKeys.subjectsPage(currentPage),
     queryFn: async () => {
-      const response = await getSubjects();
+      const response = await getSubjects({ page: currentPage });
       return response.data;
     },
   });
 
   const categoriesQuery = useQuery({
-    queryKey: queryKeys.categories,
+    queryKey: [...queryKeys.categories, "all"],
     queryFn: async () => {
-      const response = await getCategories();
+      const response = await getAllCategories();
       return response.data;
     },
   });
@@ -43,6 +47,7 @@ export default function AdminSubjectsPage() {
       setSelectedSubcategoryId(null);
       setError("");
       setSuccess("Subject created successfully.");
+      setCurrentPage(1);
       await queryClient.invalidateQueries({ queryKey: queryKeys.subjects });
       await queryClient.invalidateQueries({ queryKey: queryKeys.categories });
     },
@@ -51,11 +56,12 @@ export default function AdminSubjectsPage() {
     },
   });
 
-  const subjects = useMemo(() => subjectsQuery.data || [], [subjectsQuery.data]);
+  const subjects = useMemo(() => subjectsQuery.data?.results || [], [subjectsQuery.data]);
   const categories = useMemo(() => categoriesQuery.data || [], [categoriesQuery.data]);
   const loadingData = subjectsQuery.isPending || categoriesQuery.isPending;
   const queryError =
     subjectsQuery.isError || categoriesQuery.isError ? "Could not load subjects/categories." : "";
+  const totalPages = Math.max(1, Math.ceil((subjectsQuery.data?.count || 0) / PAGE_SIZE));
 
   const subcategories = useMemo(
     () => categories.flatMap((category) => category.subcategories),
@@ -143,6 +149,13 @@ export default function AdminSubjectsPage() {
                 </Link>
               </div>
             ))}
+
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              loading={subjectsQuery.isPending}
+            />
           </div>
         )}
       </div>

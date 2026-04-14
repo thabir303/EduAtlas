@@ -8,6 +8,7 @@ import type {
   ExpandableSection,
   InlineAnnotation,
   MediaAsset,
+  PaginatedResponse,
   Subject,
   SubjectListItem,
 } from "./types";
@@ -18,6 +19,9 @@ const baseURL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL || "http://local
 const api: AxiosInstance = axios.create({
   baseURL,
 });
+
+type QueryParamValue = string | number | boolean | undefined;
+type QueryParams = Record<string, QueryParamValue>;
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getAccessToken();
@@ -59,9 +63,12 @@ api.interceptors.response.use(
 export const login = (username: string, password: string) =>
   api.post<AuthTokens>("/auth/token/", { username, password });
 
-export const getCategories = () => api.get<Category[]>("/categories/");
+export const getCategories = (params?: QueryParams) =>
+  api.get<PaginatedResponse<Category>>("/categories/", { params });
+export const getAllCategories = () => api.get<Category[]>("/categories/", { params: { all: 1 } });
 export const getCategory = (slug: string) => api.get<Category>(`/categories/${slug}/`);
-export const getSubjects = () => api.get<SubjectListItem[]>("/subjects/");
+export const getSubjects = (params?: QueryParams) =>
+  api.get<PaginatedResponse<SubjectListItem>>("/subjects/", { params });
 export const getSubject = (slug: string) => api.get<Subject>(`/subjects/${slug}/`);
 export const getAnnotationByUUID = (uuid: string) => api.get<InlineAnnotation>(`/annotations/${uuid}/`);
 
@@ -79,7 +86,9 @@ export const createContentBlock = (data: { subject_id: number; title: string; bo
 export const createInlineAnnotation = (data: { term: string; media_asset_id: number; content_block_id: number }) =>
   api.post<InlineAnnotation>("/inline-annotations/", data);
 
-export const getMediaAssets = () => api.get<MediaAsset[]>("/media-assets/");
+export const getMediaAssets = (params?: QueryParams) =>
+  api.get<PaginatedResponse<MediaAsset>>("/media-assets/", { params });
+export const getAllMediaAssets = () => api.get<MediaAsset[]>("/media-assets/", { params: { all: 1 } });
 export const createMediaAsset = (formData: FormData) =>
   api.post<MediaAsset>("/media-assets/", formData, {
     headers: { "Content-Type": "multipart/form-data" },

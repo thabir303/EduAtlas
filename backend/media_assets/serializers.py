@@ -18,6 +18,7 @@ class MediaAssetSerializer(serializers.ModelSerializer):
             "file_url",
             "youtube_url",
             "created_at",
+            "updated_at",
         ]
         extra_kwargs = {"file": {"write_only": True}}
 

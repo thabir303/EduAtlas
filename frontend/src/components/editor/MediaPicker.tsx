@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { createMediaAsset, getMediaAssets } from "@/lib/api";
+import { createMediaAsset, getAllMediaAssets } from "@/lib/api";
 import type { MediaAsset, MediaType } from "@/lib/types";
 
 import Badge from "@/components/ui/Badge";
@@ -34,7 +34,7 @@ export default function MediaPicker({ isOpen, onClose, onSelect }: Props) {
     if (!isOpen) return;
 
     setLoading(true);
-    getMediaAssets()
+    getAllMediaAssets()
       .then(({ data }) => setAssets(data))
       .finally(() => setLoading(false));
   }, [isOpen]);

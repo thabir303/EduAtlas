@@ -38,9 +38,9 @@ export default function AdminDashboardPage() {
       : "";
 
   const stats = {
-    categories: categoriesQuery.data?.length || 0,
-    subjects: subjectsQuery.data?.length || 0,
-    mediaAssets: mediaAssetsQuery.data?.length || 0,
+    categories: categoriesQuery.data?.count || 0,
+    subjects: subjectsQuery.data?.count || 0,
+    mediaAssets: mediaAssetsQuery.data?.count || 0,
   };
 
   return (

@@ -9,10 +9,11 @@ class Category(models.Model):
 	slug = models.SlugField(unique=True, blank=True)
 	description = models.TextField(blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
 
 	class Meta:
 		verbose_name_plural = "Categories"
-		ordering = ["name"]
+		ordering = ["-updated_at", "-created_at"]
 
 	def save(self, *args, **kwargs):
 		if not self.slug:
@@ -31,10 +32,11 @@ class Subcategory(models.Model):
 	slug = models.SlugField(unique=True, blank=True)
 	description = models.TextField(blank=True)
 	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
 
 	class Meta:
 		verbose_name_plural = "Subcategories"
-		ordering = ["name"]
+		ordering = ["-updated_at", "-created_at"]
 
 	def save(self, *args, **kwargs):
 		if not self.slug:
@@ -56,7 +58,7 @@ class Subject(models.Model):
 	updated_at = models.DateTimeField(auto_now=True)
 
 	class Meta:
-		ordering = ["title"]
+		ordering = ["-updated_at", "-created_at"]
 
 	def save(self, *args, **kwargs):
 		is_new = self._state.adding

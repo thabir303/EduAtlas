@@ -21,6 +21,8 @@ class SubjectListSerializer(serializers.ModelSerializer):
             "title",
             "slug",
             "description",
+            "created_at",
+            "updated_at",
             "subcategory_name",
             "category_name",
             "subcategory_slug",
@@ -78,7 +80,17 @@ class SubcategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Subcategory
-        fields = ["id", "name", "slug", "description", "subjects", "category", "category_name"]
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "description",
+            "created_at",
+            "updated_at",
+            "subjects",
+            "category",
+            "category_name",
+        ]
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -86,4 +98,4 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ["id", "name", "slug", "description", "subcategories"]
+        fields = ["id", "name", "slug", "description", "created_at", "updated_at", "subcategories"]

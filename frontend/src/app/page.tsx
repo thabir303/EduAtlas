@@ -4,8 +4,20 @@ import { getCategories } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const { data: categories } = await getCategories();
+interface HomePageProps {
+  searchParams?: Promise<{ page?: string }>;
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const rawPage = Number(resolvedSearchParams.page || "1");
+  const currentPage = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+
+  const { data: categoryPage } = await getCategories({ page: currentPage });
+  const categories = categoryPage.results;
+  const totalPages = Math.max(1, Math.ceil(categoryPage.count / 8));
+
+  const buildPageHref = (page: number) => (page <= 1 ? "/" : `/?page=${page}`);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
@@ -51,6 +63,32 @@ export default async function HomePage() {
           </div>
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-between gap-3">
+          <Link
+            href={buildPageHref(currentPage - 1)}
+            aria-disabled={currentPage <= 1}
+            className={`rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 ${
+              currentPage <= 1 ? "pointer-events-none opacity-40" : ""
+            }`}
+          >
+            Previous
+          </Link>
+          <p className="text-sm font-semibold text-slate-600">
+            Page {currentPage} of {totalPages}
+          </p>
+          <Link
+            href={buildPageHref(currentPage + 1)}
+            aria-disabled={currentPage >= totalPages}
+            className={`rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 ${
+              currentPage >= totalPages ? "pointer-events-none opacity-40" : ""
+            }`}
+          >
+            Next
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

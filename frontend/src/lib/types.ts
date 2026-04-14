@@ -9,6 +9,7 @@ export interface MediaAsset {
   file_url?: string;
   youtube_url?: string;
   created_at: string;
+  updated_at: string;
 }
 
 export type MarkType = "bold" | "italic" | "underline" | "highlight";
@@ -75,6 +76,8 @@ export interface SubjectListItem {
   title: string;
   slug: string;
   description: string;
+  created_at: string;
+  updated_at: string;
   subcategory_name: string;
   subcategory_slug: string;
   category_name: string;
@@ -86,6 +89,8 @@ export interface Subcategory {
   name: string;
   slug: string;
   description: string;
+  created_at: string;
+  updated_at: string;
   subjects: SubjectListItem[];
 }
 
@@ -94,10 +99,19 @@ export interface Category {
   name: string;
   slug: string;
   description: string;
+  created_at: string;
+  updated_at: string;
   subcategories: Subcategory[];
 }
 
 export interface AuthTokens {
   access: string;
   refresh: string;
+}
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }
