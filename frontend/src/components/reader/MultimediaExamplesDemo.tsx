@@ -14,6 +14,7 @@ const demoAssets: MediaAsset[] = [
     text_content:
       "This is a sample text explanation. In the real lesson, highlighted terms can open contextual explanations like this.",
     created_at: "",
+    updated_at: "",
   },
   {
     id: -2,
@@ -21,6 +22,7 @@ const demoAssets: MediaAsset[] = [
     media_type: "image",
     file_url: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200",
     created_at: "",
+    updated_at: "",
   },
   {
     id: -3,
@@ -28,6 +30,7 @@ const demoAssets: MediaAsset[] = [
     media_type: "audio",
     file_url: "https://www.w3schools.com/html/horse.mp3",
     created_at: "",
+    updated_at: "",
   },
   {
     id: -4,
@@ -35,6 +38,7 @@ const demoAssets: MediaAsset[] = [
     media_type: "video",
     file_url: "https://www.w3schools.com/html/mov_bbb.mp4",
     created_at: "",
+    updated_at: "",
   },
   {
     id: -5,
@@ -42,6 +46,7 @@ const demoAssets: MediaAsset[] = [
     media_type: "youtube",
     youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     created_at: "",
+    updated_at: "",
   },
 ];
 
