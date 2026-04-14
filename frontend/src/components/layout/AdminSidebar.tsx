@@ -14,7 +14,7 @@ export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-72 border-r border-slate-200 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-900 px-4 py-6 text-slate-200">
+    <aside className="w-72 border-r border-slate-200 bg-linear-to-b from-slate-950 via-slate-900 to-slate-900 px-4 py-6 text-slate-200">
       <div className="rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300/80">EduAtlas</p>
         <h2 className="mt-1 text-lg font-bold text-white">Content Studio</h2>

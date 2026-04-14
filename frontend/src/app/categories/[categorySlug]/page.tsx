@@ -23,7 +23,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
-      <div className="mb-8 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-sky-50 p-6 shadow-sm">
+      <div className="mb-8 rounded-2xl border border-slate-200 bg-linear-to-br from-white to-sky-50 p-6 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">Category</p>
         <h1 className="mt-2 text-3xl font-extrabold text-slate-900">{category.name}</h1>
         <p className="mt-2 max-w-3xl text-slate-600">{category.description || "No description provided."}</p>
@@ -73,6 +73,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           </section>
         ))}
       </div>
+
+      {category.subcategories.length === 0 && (
+        <p className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
+          No subcategories are available under this category yet.
+        </p>
+      )}
     </div>
   );
 }

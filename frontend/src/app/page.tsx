@@ -16,26 +16,31 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const { data: categoryPage } = await getCategories({ page: currentPage });
   const categories = categoryPage.results;
   const totalPages = Math.max(1, Math.ceil(categoryPage.count / 8));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
 
   const buildPageHref = (page: number) => (page <= 1 ? "/" : `/?page=${page}`);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
-      <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Explore Subjects</h1>
-        <p className="mt-2 text-slate-600">
+      <div className="mb-8 rounded-2xl border border-slate-200 bg-linear-to-br from-white to-sky-50 p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">EduAtlas Reader</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Explore Subjects</h1>
+        <p className="mt-2 max-w-3xl text-slate-600">
           Browse categories, open subjects, and click highlighted terms to view multimedia explanations.
+        </p>
+        <p className="mt-4 inline-flex rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold text-sky-700">
+          Total categories: {categoryPage.count}
         </p>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
         {categories.map((category) => (
-          <div key={category.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div key={category.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-slate-800">{category.name}</h2>
               <Link
                 href={`/categories/${category.slug}`}
-                className="text-sm font-semibold text-blue-700 hover:text-blue-900"
+                className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
               >
                 View
               </Link>
@@ -57,6 +62,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                       </li>
                     ))}
                   </ul>
+                  {subcategory.subjects.length === 0 && (
+                    <p className="mt-2 text-xs text-slate-500">No subjects available in this subcategory yet.</p>
+                  )}
                 </div>
               ))}
             </div>
@@ -64,31 +72,35 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         ))}
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-8 flex items-center justify-between gap-3">
-          <Link
-            href={buildPageHref(currentPage - 1)}
-            aria-disabled={currentPage <= 1}
-            className={`rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 ${
-              currentPage <= 1 ? "pointer-events-none opacity-40" : ""
-            }`}
-          >
-            Previous
-          </Link>
-          <p className="text-sm font-semibold text-slate-600">
-            Page {currentPage} of {totalPages}
-          </p>
-          <Link
-            href={buildPageHref(currentPage + 1)}
-            aria-disabled={currentPage >= totalPages}
-            className={`rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 ${
-              currentPage >= totalPages ? "pointer-events-none opacity-40" : ""
-            }`}
-          >
-            Next
-          </Link>
+      {categories.length === 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm">
+          No categories found on this page yet.
         </div>
       )}
+
+      <div className="mt-8 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+        <Link
+          href={buildPageHref(safeCurrentPage - 1)}
+          aria-disabled={safeCurrentPage <= 1}
+          className={`rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 ${
+            safeCurrentPage <= 1 ? "pointer-events-none opacity-40" : ""
+          }`}
+        >
+          Previous
+        </Link>
+        <p className="text-sm font-semibold text-slate-600">
+          Page {safeCurrentPage} of {totalPages}
+        </p>
+        <Link
+          href={buildPageHref(safeCurrentPage + 1)}
+          aria-disabled={safeCurrentPage >= totalPages}
+          className={`rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 ${
+            safeCurrentPage >= totalPages ? "pointer-events-none opacity-40" : ""
+          }`}
+        >
+          Next
+        </Link>
+      </div>
     </div>
   );
 }

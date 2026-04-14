@@ -45,7 +45,7 @@ export default async function SubjectDetailPage({ params }: Props) {
 
   return (
     <div>
-      <div className="border-b border-slate-200 bg-white/80 backdrop-blur-sm">
+      <div className="border-b border-slate-200 bg-linear-to-r from-white via-white to-emerald-50/50 backdrop-blur-sm">
         <div className="mx-auto max-w-6xl px-6 py-5">
           <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm">
             <Link href="/" className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-700 hover:bg-slate-100">
@@ -66,8 +66,11 @@ export default async function SubjectDetailPage({ params }: Props) {
             </span>
           </nav>
           <h1 className="mt-4 text-2xl font-extrabold text-slate-900">{subject.title}</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 max-w-3xl text-sm text-slate-600">
             Read the lesson, then click highlighted terms to open multimedia explanation popups.
+          </p>
+          <p className="mt-3 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+            Tip: open highlighted terms to view text, image, audio, video, or YouTube references.
           </p>
         </div>
       </div>

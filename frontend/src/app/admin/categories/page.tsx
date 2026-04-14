@@ -94,7 +94,10 @@ export default function AdminCategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Manage Categories</h1>
+      <div className="rounded-2xl border border-slate-200 bg-linear-to-r from-white to-slate-50 p-5 shadow-sm">
+        <h1 className="text-2xl font-bold text-slate-900">Manage Categories</h1>
+        <p className="mt-1 text-sm text-slate-600">Create category hierarchy and quickly jump to latest linked subjects.</p>
+      </div>
       {(error || categoriesLoadError) && (
         <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
           {error || categoriesLoadError}
@@ -160,8 +163,11 @@ export default function AdminCategoriesPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">Current Structure</h2>
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-900">Current Structure</h2>
+          <p className="text-xs font-semibold text-slate-500">Page {currentPage} of {totalPages}</p>
+        </div>
         {loadingCategories ? (
           <div className="space-y-3">
             <SkeletonBlock className="h-20 w-full" />
@@ -235,6 +241,12 @@ export default function AdminCategoriesPage() {
               onPageChange={setCurrentPage}
               loading={loadingCategories}
             />
+
+            {categories.length === 0 && (
+              <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                No categories found on this page.
+              </p>
+            )}
           </div>
         )}
       </div>
